@@ -18,6 +18,15 @@ public class WalletController {
     public ResponseEntity<WalletResponse> createWallet(@RequestBody CreateWalletRequest request) {
         return ResponseEntity.ok(walletService.createWallet(request));
     }
+    @GetMapping("/{id}")
+    public ResponseEntity<WalletResponse> getWallet(@PathVariable Long id) {
+        return ResponseEntity.ok(walletService.getWalletDetails(id));
+    }
+    @PostMapping("/{id}/file")
+    public ResponseEntity<String> createWalletFile(@PathVariable Long id) {
+        String fileName = walletService.createFileWithUserName(id);
+        return ResponseEntity.ok("File created: " + fileName);
+    }
 
     @PutMapping("/{id}/balance")
     public ResponseEntity<WalletResponse> updateBalance(

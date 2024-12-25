@@ -11,4 +11,5 @@ public class WalletResponse {
     private Double balance;
     private String currencyCode;
     private String currencyName;
+    private String userName; // Add userName
 }
