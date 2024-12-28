@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wallet-service
+  namespace: wallet-service
+  labels:
+    app: wallet-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wallet-service
+  template:
+    metadata:
+      labels:
+        app: wallet-service
+    spec:
+      containers:
+        - name: wallet-service
+          image: ${ECR_REPO}/wallet-service:${IMAGE_TAG}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:configserver:http://config-server:8889"
+            - name: USER_SERVICE_URL
+              value: "http://user-service:8080/api/users"

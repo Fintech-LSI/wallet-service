@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wallet-service-config
+  namespace: wallet-service
+data:
+  application.yml: |-
+    spring:
+      application:
+        name: wallet-service
+      config:
+        import: optional:configserver:http://config-server:8889
+    
+    user-service:
+      url: http://user-service:8080/api/users
+
+    eureka:
+      client:
+        serviceUrl:
+          defaultZone: http://discovery-service:8761/eureka/
+        register-with-eureka: true
+        fetch-registry: true
+      instance:
+        prefer-ip-address: true
