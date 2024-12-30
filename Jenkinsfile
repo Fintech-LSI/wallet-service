@@ -2,13 +2,9 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCOUNT_ID = credentials('AWS_ACCOUNT_ID')
-        AWS_REGION = 'us-east-1'
-        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        AWS_REGION = 'us-east-2' // Specify your AWS region
         IMAGE_NAME = 'wallet-service'
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        EKS_CLUSTER_NAME = 'your-eks-cluster'
-        NAMESPACE = 'wallet-service'
+        ECR_REGISTRY = 'public.ecr.aws/z1z0w2y6' // Replace with your ECR public registry
     }
 
     stages {
@@ -38,8 +34,16 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}"
-                    docker.build("${ECR_REPO}/${IMAGE_NAME}:${IMAGE_TAG}")
+                    // Authenticate to ECR public registry
+                    sh """
+                    aws ecr-public get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                    """
+
+                    // Build and tag the Docker image
+                    sh """
+                    docker build -t ${IMAGE_NAME}:latest .
+                    docker tag ${IMAGE_NAME}:latest ${ECR_REGISTRY}/${IMAGE_NAME}:latest
+                    """
                 }
             }
         }
@@ -47,24 +51,9 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
+                    // Push the image to ECR public registry
                     sh """
-                        docker push ${ECR_REPO}/${IMAGE_NAME}:${IMAGE_TAG}
-                        docker tag ${ECR_REPO}/${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}/${IMAGE_NAME}:latest
-                        docker push ${ECR_REPO}/${IMAGE_NAME}:latest
-                    """
-                }
-            }
-        }
-
-        stage('Deploy to EKS') {
-            steps {
-                script {
-                    sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}"
-                    sh "kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
-
-                    sh """
-                        kubectl apply -f k8s/ -n ${NAMESPACE}
-                        kubectl rollout status deployment/wallet-service -n ${NAMESPACE}
+                    docker push ${ECR_REGISTRY}/${IMAGE_NAME}:latest
                     """
                 }
             }
@@ -73,14 +62,12 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            cleanWs() // Clean workspace
+            // Optional: Remove Docker images to free up space
             sh """
-                docker rmi ${ECR_REPO}/${IMAGE_NAME}:${IMAGE_TAG} || true
-                docker rmi ${ECR_REPO}/${IMAGE_NAME}:latest || true
+            docker rmi ${ECR_REGISTRY}/${IMAGE_NAME}:latest || true
+            docker rmi ${IMAGE_NAME}:latest || true
             """
-        }
-        failure {
-            sh "kubectl rollout undo deployment/wallet-service -n ${NAMESPACE} || true"
         }
     }
 }
