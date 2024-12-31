@@ -14,6 +14,13 @@ public class WalletController {
     public WalletController(WalletService walletService) {
         this.walletService = walletService;
     }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+      return ResponseEntity.ok("wallet is runing");
+    }
+
+
     @PostMapping
     public ResponseEntity<WalletResponse> createWallet(@RequestBody CreateWalletRequest request) {
         return ResponseEntity.ok(walletService.createWallet(request));
