@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION      = 'us-east-2'
+        AWS_REGION      = 'us-east-1'
         IMAGE_NAME      = 'wallet-service'
         ECR_REGISTRY    = 'public.ecr.aws/z1z0w2y6'
         DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
