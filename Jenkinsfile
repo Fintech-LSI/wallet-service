@@ -5,9 +5,7 @@ pipeline {
         AWS_REGION      = 'us-east-2'
         IMAGE_NAME      = 'wallet-service'
         ECR_REGISTRY    = 'public.ecr.aws/z1z0w2y6'
-        DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
-        // Add reference to AWS credentials
-        AWS_CREDENTIALS = 'aws-credentials' // Replace with your AWS credentials ID
+        DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}" //Docker image tag based on jenkins build number
     }
 
     stages {
@@ -23,27 +21,26 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+       stage('Build Docker Image') {
             steps {
                 script {
-                    // Wrap AWS commands with credentials
-                    withAWS(credentials: AWS_CREDENTIALS, region: AWS_REGION) {
-                        sh """
-                            aws ecr-public get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                            docker build -t ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} .
-                            docker tag ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}
+
+                      sh """
+                           aws ecr-public get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
                         """
-                    }
+                    // Build and tag the Docker image
+                     sh """
+                         docker build -t ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} .
+                         docker tag ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}
+                    """
+
                 }
             }
         }
-
         stage('Push to ECR') {
             steps {
                 script {
-                    withAWS(credentials: AWS_CREDENTIALS, region: AWS_REGION) {
-                        sh "docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}"
-                    }
+                    sh "docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}"
                 }
             }
         }
@@ -52,7 +49,7 @@ pipeline {
     post {
         always {
             cleanWs()
-            sh """
+              sh """
                 docker rmi ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} || true
                 docker rmi ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} || true
             """
