@@ -6,6 +6,8 @@ pipeline {
         IMAGE_NAME      = 'wallet-service'
         ECR_REGISTRY    = 'public.ecr.aws/z1z0w2y6'
         DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
+        EKS_CLUSTER_NAME = 'microservice-demo'  // Replace with your cluster name
+        NAMESPACE = 'fintech'  // Replace with your desired namespace
     }
 
     stages {
@@ -26,7 +28,7 @@ pipeline {
                 script {
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials',  // Using your actual credential ID
+                        credentialsId: 'aws-credentials',
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
@@ -45,11 +47,46 @@ pipeline {
                 script {
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials',  // Using your actual credential ID
+                        credentialsId: 'aws-credentials',
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh "docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                script {
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-credentials',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        // Update kubeconfig
+                        sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}"
+
+                        // Create namespace if it doesn't exist
+                        sh "kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+
+                        // Replace variables in deployment manifest
+                        sh """
+                            sed 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g; s|\${IMAGE_NAME}|${IMAGE_NAME}|g; s|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' k8s/deployment.yaml > deployment-updated.yaml
+                        """
+
+                        // Apply both manifests
+                        sh """
+                            kubectl apply -f deployment-updated.yaml -n ${NAMESPACE}
+                            kubectl apply -f k8s/service.yaml -n ${NAMESPACE}
+                        """
+
+                        // Wait for rollout to complete
+                        sh """
+                            kubectl rollout status deployment/wallet-service -n ${NAMESPACE}
+                        """
                     }
                 }
             }
@@ -62,6 +99,7 @@ pipeline {
             sh """
                 docker rmi ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} || true
                 docker rmi ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} || true
+                rm -f deployment-updated.yaml || true
             """
         }
     }
