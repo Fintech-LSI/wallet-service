@@ -6,8 +6,8 @@ pipeline {
         IMAGE_NAME      = 'wallet-service'
         ECR_REGISTRY    = 'public.ecr.aws/z1z0w2y6'
         DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
-        EKS_CLUSTER_NAME = 'microservice-demo'  // Replace with your cluster name
-        NAMESPACE = 'fintech'  // Replace with your desired namespace
+        EKS_CLUSTER_NAME = 'microservice-demo'
+        NAMESPACE = 'fintech'
     }
 
     stages {
@@ -26,12 +26,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
+                    withAWS(credentials: 'aws-credentials', region: env.AWS_REGION) {
                         sh """
                             aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${ECR_REGISTRY}
                             docker build -t ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} .
@@ -45,12 +40,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
+                    withAWS(credentials: 'aws-credentials', region: env.AWS_REGION) {
                         sh "docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}"
                     }
                 }
@@ -60,13 +50,9 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 script {
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
+                    withAWS(credentials: 'aws-credentials', region: env.AWS_REGION) {
                         // Update kubeconfig
+                        sh "aws eks get-token --cluster-name ${EKS_CLUSTER_NAME} | kubectl apply -f -"
                         sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}"
 
                         // Create namespace if it doesn't exist
@@ -84,9 +70,7 @@ pipeline {
                         """
 
                         // Wait for rollout to complete
-                        sh """
-                            kubectl rollout status deployment/wallet-service -n ${NAMESPACE}
-                        """
+                        sh "kubectl rollout status deployment/wallet-service -n ${NAMESPACE} --timeout=300s"
                     }
                 }
             }
