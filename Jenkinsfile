@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION      = 'us-east-1'
+        AWS_REGION      = 'us-east-2'
         IMAGE_NAME      = 'wallet-service'
         ECR_REGISTRY    = 'public.ecr.aws/z1z0w2y6'
         DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
@@ -33,7 +33,7 @@ pipeline {
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh """
-                            aws ecr-public get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                            aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${ECR_REGISTRY}
                             docker build -t ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} .
                             docker tag ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}
                         """
