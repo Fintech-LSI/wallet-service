@@ -2,9 +2,11 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-east-2' // Specify your AWS region
+        AWS_REGION = 'us-east-2'
         IMAGE_NAME = 'wallet-service'
-        ECR_REGISTRY = 'public.ecr.aws/z1z0w2y6' // Replace with your ECR public registry
+        ECR_REGISTRY = 'public.ecr.aws/z1z0w2y6'
+        // Add AWS credentials environment variable
+        AWS_CREDENTIALS = credentials('aws-credentials')
     }
 
     stages {
@@ -20,29 +22,20 @@ pipeline {
             }
         }
 
-        // stage('Test') {
-        //     steps {
-        //         sh 'mvn test'
-        //     }
-        //     post {
-        //         always {
-        //             junit '**/target/surefire-reports/*.xml'
-        //         }
-        //     }
-        // }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Authenticate to ECR public registry
-                    sh """
-                    aws ecr-public get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                    """
+                    // Get the ECR token and store it in a variable
+                    def ecrLogin = sh(
+                        script: "aws ecr-public get-login-password --region ${AWS_REGION}",
+                        returnStdout: true
+                    ).trim()
 
-                    // Build and tag the Docker image
+                    // Use the token directly with docker login
                     sh """
-                    docker build -t ${IMAGE_NAME}:latest .
-                    docker tag ${IMAGE_NAME}:latest ${ECR_REGISTRY}/${IMAGE_NAME}:latest
+                        echo '${ecrLogin}' | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                        docker build -t ${IMAGE_NAME}:latest .
+                        docker tag ${IMAGE_NAME}:latest ${ECR_REGISTRY}/${IMAGE_NAME}:latest
                     """
                 }
             }
@@ -51,10 +44,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    // Push the image to ECR public registry
-                    sh """
-                    docker push ${ECR_REGISTRY}/${IMAGE_NAME}:latest
-                    """
+                    sh "docker push ${ECR_REGISTRY}/${IMAGE_NAME}:latest"
                 }
             }
         }
@@ -62,11 +52,10 @@ pipeline {
 
     post {
         always {
-            cleanWs() // Clean workspace
-            // Optional: Remove Docker images to free up space
+            cleanWs()
             sh """
-            docker rmi ${ECR_REGISTRY}/${IMAGE_NAME}:latest || true
-            docker rmi ${IMAGE_NAME}:latest || true
+                docker rmi ${ECR_REGISTRY}/${IMAGE_NAME}:latest || true
+                docker rmi ${IMAGE_NAME}:latest || true
             """
         }
     }
