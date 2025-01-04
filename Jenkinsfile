@@ -6,8 +6,9 @@ pipeline {
         IMAGE_NAME      = 'wallet-service'
         ECR_REGISTRY    = 'public.ecr.aws/z1z0w2y6'
         DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
-        EKS_CLUSTER_NAME = 'main-cluster'  // Replace with your cluster name
-        NAMESPACE = 'fintech'  // Replace with your desired namespace
+        EKS_CLUSTER_NAME = 'main-cluster'
+        NAMESPACE = 'fintech'
+        KUBECONFIG = "${WORKSPACE}/.kube/config"
     }
 
     stages {
@@ -66,26 +67,50 @@ pipeline {
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
-                        // Update kubeconfig
-                        sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}"
+                        // Create .kube directory if it doesn't exist
+                        sh "mkdir -p ${WORKSPACE}/.kube"
+
+                        // Update kubeconfig with explicit path
+                        sh """
+                            aws eks update-kubeconfig --region ${AWS_REGION} \
+                                --name ${EKS_CLUSTER_NAME} \
+                                --kubeconfig ${KUBECONFIG}
+                        """
+
+                        // Verify cluster access
+                        sh """
+                            kubectl --kubeconfig=${KUBECONFIG} auth can-i create namespace
+                            if [ \$? -ne 0 ]; then
+                                echo "Failed to authenticate with EKS cluster"
+                                exit 1
+                            fi
+                        """
 
                         // Create namespace if it doesn't exist
-                        sh "kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+                        sh """
+                            kubectl --kubeconfig=${KUBECONFIG} create namespace ${NAMESPACE} \
+                                --dry-run=client -o yaml | \
+                                kubectl --kubeconfig=${KUBECONFIG} apply -f -
+                        """
 
                         // Replace variables in deployment manifest
                         sh """
-                            sed 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g; s|\${IMAGE_NAME}|${IMAGE_NAME}|g; s|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' k8s/deployment.yaml > deployment-updated.yaml
+                            sed 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g; \
+                                s|\${IMAGE_NAME}|${IMAGE_NAME}|g; \
+                                s|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' \
+                                k8s/deployment.yaml > deployment-updated.yaml
                         """
 
-                        // Apply both manifests
+                        // Apply manifests with explicit kubeconfig
                         sh """
-                            kubectl apply -f deployment-updated.yaml -n ${NAMESPACE}
-                            kubectl apply -f k8s/service.yaml -n ${NAMESPACE}
+                            kubectl --kubeconfig=${KUBECONFIG} apply -f deployment-updated.yaml -n ${NAMESPACE}
+                            kubectl --kubeconfig=${KUBECONFIG} apply -f k8s/service.yaml -n ${NAMESPACE}
                         """
 
-                        // Wait for rollout to complete
+                        // Wait for rollout
                         sh """
-                            kubectl rollout status deployment/wallet-service -n ${NAMESPACE}
+                            kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/wallet-service \
+                                -n ${NAMESPACE} --timeout=300s
                         """
                     }
                 }
