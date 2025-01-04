@@ -24,6 +24,24 @@ pipeline {
             }
         }
 
+        stage('Get AWS Identity') {
+            steps {
+                script {
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-credentials',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            echo "Checking AWS Identity..."
+                            aws sts get-caller-identity
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -70,45 +88,44 @@ pipeline {
                         // Create .kube directory if it doesn't exist
                         sh "mkdir -p ${WORKSPACE}/.kube"
 
-                        // Update kubeconfig with explicit path
+                        // Update kubeconfig with explicit path and debug
                         sh """
+                            echo "Updating kubeconfig..."
                             aws eks update-kubeconfig --region ${AWS_REGION} \
                                 --name ${EKS_CLUSTER_NAME} \
-                                --kubeconfig ${KUBECONFIG}
-                        """
+                                --kubeconfig ${KUBECONFIG} --verbose
 
-                        // Verify cluster access
-                        sh """
-                            kubectl --kubeconfig=${KUBECONFIG} auth can-i create namespace
+                            echo "Testing EKS connection..."
+                            kubectl --kubeconfig=${KUBECONFIG} version
+
+                            echo "Checking AWS auth ConfigMap..."
+                            kubectl --kubeconfig=${KUBECONFIG} -n kube-system get configmap aws-auth -o yaml || true
+
+                            echo "Testing cluster permissions..."
+                            kubectl --kubeconfig=${KUBECONFIG} auth can-i create namespace --v=8
                             if [ \$? -ne 0 ]; then
                                 echo "Failed to authenticate with EKS cluster"
+                                echo "Current AWS identity:"
+                                aws sts get-caller-identity
                                 exit 1
                             fi
-                        """
 
-                        // Create namespace if it doesn't exist
-                        sh """
+                            echo "Creating namespace ${NAMESPACE}..."
                             kubectl --kubeconfig=${KUBECONFIG} create namespace ${NAMESPACE} \
                                 --dry-run=client -o yaml | \
                                 kubectl --kubeconfig=${KUBECONFIG} apply -f -
-                        """
 
-                        // Replace variables in deployment manifest
-                        sh """
+                            echo "Updating deployment manifest..."
                             sed 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g; \
                                 s|\${IMAGE_NAME}|${IMAGE_NAME}|g; \
                                 s|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' \
                                 k8s/deployment.yaml > deployment-updated.yaml
-                        """
 
-                        // Apply manifests with explicit kubeconfig
-                        sh """
+                            echo "Applying Kubernetes manifests..."
                             kubectl --kubeconfig=${KUBECONFIG} apply -f deployment-updated.yaml -n ${NAMESPACE}
                             kubectl --kubeconfig=${KUBECONFIG} apply -f k8s/service.yaml -n ${NAMESPACE}
-                        """
 
-                        // Wait for rollout
-                        sh """
+                            echo "Waiting for deployment rollout..."
                             kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/wallet-service \
                                 -n ${NAMESPACE} --timeout=300s
                         """
@@ -126,6 +143,13 @@ pipeline {
                 docker rmi ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} || true
                 rm -f deployment-updated.yaml || true
             """
+        }
+        failure {
+            sh '''
+                echo "Pipeline failed. Printing debug information..."
+                aws sts get-caller-identity || true
+                kubectl version --kubeconfig=${KUBECONFIG} || true
+            '''
         }
     }
 }
