@@ -6,7 +6,7 @@ pipeline {
         IMAGE_NAME      = 'wallet-service'
         ECR_REGISTRY    = 'public.ecr.aws/z1z0w2y6'
         DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
-        EKS_CLUSTER_NAME = 'microservice-demo'  // Replace with your cluster name
+        EKS_CLUSTER_NAME = 'main-cluster'  // Replace with your cluster name
         NAMESPACE = 'fintech'  // Replace with your desired namespace
     }
 
