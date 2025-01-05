@@ -74,24 +74,34 @@ pipeline {
 
                         // Replace variables in deployment manifest
                         sh """
-                            sed 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g; s|\${IMAGE_NAME}|${IMAGE_NAME}|g; s|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' k8s/deployment.yaml > deployment-updated.yaml
+                            sed -e 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g' \
+                                -e 's|\${IMAGE_NAME}|${IMAGE_NAME}|g' \
+                                -e 's|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' \
+                                k8s/deployment.yaml > deployment-updated.yaml
                         """
 
-                        // Apply both manifests
+                        // Apply Kubernetes manifests in order (ConfigMap -> Service -> Deployment)
                         sh """
-                            kubectl apply -f deployment-updated.yaml -n ${NAMESPACE}
+                            # Apply ConfigMap first
+                            kubectl apply -f k8s/configmap.yaml -n ${NAMESPACE}
+
+                            # Apply Service
                             kubectl apply -f k8s/service.yaml -n ${NAMESPACE}
+
+                            # Apply updated Deployment
+                            kubectl apply -f deployment-updated.yaml -n ${NAMESPACE}
                         """
 
-                        // Wait for rollout to complete
-                        sh """
-                            kubectl rollout status deployment/wallet-service -n ${NAMESPACE}
-                        """
+                        // Wait for rollout to complete with timeout
+                        timeout(time: 5, unit: 'MINUTES') {
+                            sh """
+                                kubectl rollout status deployment/wallet-service -n ${NAMESPACE}
+                            """
+                        }
                     }
                 }
             }
         }
-    }
 
     post {
         always {
