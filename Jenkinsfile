@@ -6,9 +6,8 @@ pipeline {
         IMAGE_NAME      = 'wallet-service'
         ECR_REGISTRY    = 'public.ecr.aws/z1z0w2y6'
         DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
-        EKS_CLUSTER_NAME = 'main-cluster'
-        NAMESPACE = 'fintech'
-        KUBECONFIG = "${WORKSPACE}/.kube/config"
+        EKS_CLUSTER_NAME = 'main-cluster'  // Replace with your cluster name
+        NAMESPACE = 'fintech'  // Replace with your desired namespace
     }
 
     stages {
@@ -21,24 +20,6 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        stage('Get AWS Identity') {
-            steps {
-                script {
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
-                        sh '''
-                            echo "Checking AWS Identity..."
-                            aws sts get-caller-identity
-                        '''
-                    }
-                }
             }
         }
 
@@ -85,49 +66,26 @@ pipeline {
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
-                        // Create .kube directory if it doesn't exist
-                        sh "mkdir -p ${WORKSPACE}/.kube"
+                        // Update kubeconfig
+                        sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}"
 
-                        // Update kubeconfig with explicit path and debug
+                        // Create namespace if it doesn't exist
+                        sh "kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+
+                        // Replace variables in deployment manifest
                         sh """
-                            echo "Updating kubeconfig..."
-                            aws eks update-kubeconfig --region ${AWS_REGION} \
-                                --name ${EKS_CLUSTER_NAME} \
-                                --kubeconfig ${KUBECONFIG} --verbose
+                            sed 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g; s|\${IMAGE_NAME}|${IMAGE_NAME}|g; s|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' k8s/deployment.yaml > deployment-updated.yaml
+                        """
 
-                            echo "Testing EKS connection..."
-                            kubectl --kubeconfig=${KUBECONFIG} version
+                        // Apply both manifests
+                        sh """
+                            kubectl apply -f deployment-updated.yaml -n ${NAMESPACE}
+                            kubectl apply -f k8s/service.yaml -n ${NAMESPACE}
+                        """
 
-                            echo "Checking AWS auth ConfigMap..."
-                            kubectl --kubeconfig=${KUBECONFIG} -n kube-system get configmap aws-auth -o yaml || true
-
-                            echo "Testing cluster permissions..."
-                            kubectl --kubeconfig=${KUBECONFIG} auth can-i create namespace --v=8
-                            if [ \$? -ne 0 ]; then
-                                echo "Failed to authenticate with EKS cluster"
-                                echo "Current AWS identity:"
-                                aws sts get-caller-identity
-                                exit 1
-                            fi
-
-                            echo "Creating namespace ${NAMESPACE}..."
-                            kubectl --kubeconfig=${KUBECONFIG} create namespace ${NAMESPACE} \
-                                --dry-run=client -o yaml | \
-                                kubectl --kubeconfig=${KUBECONFIG} apply -f -
-
-                            echo "Updating deployment manifest..."
-                            sed 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g; \
-                                s|\${IMAGE_NAME}|${IMAGE_NAME}|g; \
-                                s|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' \
-                                k8s/deployment.yaml > deployment-updated.yaml
-
-                            echo "Applying Kubernetes manifests..."
-                            kubectl --kubeconfig=${KUBECONFIG} apply -f deployment-updated.yaml -n ${NAMESPACE}
-                            kubectl --kubeconfig=${KUBECONFIG} apply -f k8s/service.yaml -n ${NAMESPACE}
-
-                            echo "Waiting for deployment rollout..."
-                            kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/wallet-service \
-                                -n ${NAMESPACE} --timeout=300s
+                        // Wait for rollout to complete
+                        sh """
+                            kubectl rollout status deployment/wallet-service -n ${NAMESPACE}
                         """
                     }
                 }
@@ -143,13 +101,6 @@ pipeline {
                 docker rmi ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} || true
                 rm -f deployment-updated.yaml || true
             """
-        }
-        failure {
-            sh '''
-                echo "Pipeline failed. Printing debug information..."
-                aws sts get-caller-identity || true
-                kubectl version --kubeconfig=${KUBECONFIG} || true
-            '''
         }
     }
 }
