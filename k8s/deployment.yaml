@@ -2,8 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: wallet-service
-  labels:
-    app: wallet-service
+  namespace: fintech
 spec:
   replicas: 1
   selector:
@@ -19,6 +18,12 @@ spec:
           image: ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}
           ports:
             - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: wallet-service-config
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
           resources:
             requests:
               memory: "512Mi"
@@ -26,6 +31,9 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "prod"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10

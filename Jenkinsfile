@@ -85,24 +85,25 @@ pipeline {
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
+                        // Create namespace if it doesn't exist
                         sh "kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
 
+                        // Apply Kubernetes configurations
                         sh """
+                            # Update deployment image
                             sed -e 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g' \
                                 -e 's|\${IMAGE_NAME}|${IMAGE_NAME}|g' \
                                 -e 's|\${DOCKER_BUILD_NUMBER}|${DOCKER_BUILD_NUMBER}|g' \
                                 k8s/deployment.yaml > deployment-updated.yaml
-                        """
 
-                        sh """
                             kubectl apply -f k8s/configmap.yaml -n ${NAMESPACE}
                             kubectl apply -f k8s/service.yaml -n ${NAMESPACE}
                             kubectl apply -f deployment-updated.yaml -n ${NAMESPACE}
-                        """
 
-                        timeout(time: 5, unit: 'MINUTES') {
-                            sh "kubectl rollout status deployment/wallet-service -n ${NAMESPACE}"
-                        }
+                            # Verify deployment
+                            kubectl rollout status deployment/wallet-service -n ${NAMESPACE}
+                            kubectl get pods -n ${NAMESPACE} -l app=wallet-service
+                        """
                     }
                 }
             }
