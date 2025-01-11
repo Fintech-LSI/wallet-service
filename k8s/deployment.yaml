@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wallet-service
+  name: wallet-service-deploy
   namespace: fintech
 spec:
   replicas: 2
