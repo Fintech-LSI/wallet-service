@@ -48,11 +48,11 @@ spec:
                   key: password
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "250m"
+              memory: "256Mi"
+              cpu: "150m"
             limits:
               memory: "512Mi"
-              cpu: "200m"
+              cpu: "300m"
           readinessProbe:
             httpGet:
               path: /actuator/health
