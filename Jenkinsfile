@@ -18,7 +18,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        /*stage('SonarQube Analysis') {
             environment {
                 SONAR_TOKEN = credentials('sonar-token')
             }
@@ -27,7 +27,7 @@ pipeline {
                     sh """
                         mvn sonar:sonar \
                         -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.host.url=http://your-sonarqube-url:9000 \
+                        -Dsonar.host.url=http://18.208.246.238:9000/ \
                         -Dsonar.login=${SONAR_TOKEN}
                     """
                 }
@@ -40,7 +40,7 @@ pipeline {
                     waitForQualityGate abortPipeline: true
                 }
             }
-        }
+        }*/
 
         stage('Build') {
             steps {

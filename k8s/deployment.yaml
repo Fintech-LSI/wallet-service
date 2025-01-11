@@ -4,7 +4,7 @@ metadata:
   name: wallet-service
   namespace: fintech
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: wallet-service
@@ -24,6 +24,28 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "prod"
+            # MySQL Credentials
+            - name: SPRING_DATASOURCE_PRIMARY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: username
+            - name: SPRING_DATASOURCE_PRIMARY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: password
+            # PostgreSQL Credentials
+            - name: SPRING_DATASOURCE_SECONDARY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: SPRING_DATASOURCE_SECONDARY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
           resources:
             requests:
               memory: "512Mi"
