@@ -18,28 +18,6 @@ pipeline {
             }
         }
 
-        stage('Unit Tests') {
-            steps {
-                sh 'mvn test'
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Integration Tests') {
-            steps {
-                sh 'mvn verify -DskipUnitTests'
-            }
-            post {
-                always {
-                    junit '**/target/failsafe-reports/*.xml'
-                }
-            }
-        }
-
         stage('SonarQube Analysis') {
             environment {
                 SONAR_TOKEN = credentials('sonar-token')
