@@ -39,15 +39,17 @@ pipeline {
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         try {
+                            // Login to ECR
                             sh """
                                 aws ecr-public get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
                             """
 
+                            // Build and tag image directly as latest
                             sh """
-                                docker build -t ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} . --no-cache
-                                docker tag ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} ${ECR_REGISTRY}/${IMAGE_NAME}:latest
+                                docker build -t ${ECR_REGISTRY}/${IMAGE_NAME}:latest . --no-cache
                             """
 
+                            // Push the latest tag
                             sh """
                                 docker push ${ECR_REGISTRY}/${IMAGE_NAME}:latest
                             """
@@ -79,11 +81,6 @@ pipeline {
                                 kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                             """
 
-                            // Update deployment file with new image
-                            sh """
-                                sed -i 's|${ECR_REGISTRY}/${IMAGE_NAME}:[0-9]*|${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}|g' k8s/deployment.yaml
-                            """
-
                             // Apply K8s manifests
                             sh """
                                 kubectl apply -f k8s/configmap.yaml -n ${NAMESPACE}
@@ -92,7 +89,7 @@ pipeline {
                                 kubectl apply -f k8s/service.yaml -n ${NAMESPACE}
                             """
 
-                            // Just check pod status
+                            // Check pod status
                             sh """
                                 echo "Checking pod status:"
                                 kubectl get pods -n ${NAMESPACE} -l app=wallet-service
@@ -115,11 +112,9 @@ pipeline {
             echo 'Pipeline failed! Check the logs for details.'
         }
         always {
-            // Cleanup
+            // Cleanup only the local Docker image
             sh """
-                docker rmi ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} || true
                 docker rmi ${ECR_REGISTRY}/${IMAGE_NAME}:latest || true
-                docker rmi ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} || true
             """
             cleanWs()
         }
