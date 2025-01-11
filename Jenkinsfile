@@ -50,7 +50,6 @@ pipeline {
                             """
 
                             sh """
-                                docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}
                                 docker push ${ECR_REGISTRY}/${IMAGE_NAME}:latest
                             """
                         } catch (Exception e) {

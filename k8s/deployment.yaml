@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: wallet-service
-          image: public.ecr.aws/z1z0w2y6/wallet-service:1.0
+          image: public.ecr.aws/z1z0w2y6/wallet-service:latest
           ports:
             - containerPort: 8080
           envFrom:
