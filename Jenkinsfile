@@ -8,7 +8,6 @@ pipeline {
         DOCKER_BUILD_NUMBER = "${BUILD_NUMBER}"
         EKS_CLUSTER_NAME = 'main-cluster'
         NAMESPACE = 'fintech'
-        SONAR_PROJECT_KEY = 'wallet-service'
     }
 
     stages {
@@ -18,37 +17,12 @@ pipeline {
             }
         }
 
-        /*stage('SonarQube Analysis') {
-            environment {
-                SONAR_TOKEN = credentials('sonar-token')
-            }
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                        mvn sonar:sonar \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.host.url=http://18.208.246.238:9000/ \
-                        -Dsonar.login=${SONAR_TOKEN}
-                    """
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }*/
-
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
 
-        // Rest of your existing stages remain the same
         stage('Login to EKS') {
             steps {
                 script {
