@@ -45,7 +45,6 @@ pipeline {
 
                             sh """
                                 docker build -t ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} . --no-cache
-                                docker tag ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}
                                 docker tag ${IMAGE_NAME}:${DOCKER_BUILD_NUMBER} ${ECR_REGISTRY}/${IMAGE_NAME}:latest
                             """
 
