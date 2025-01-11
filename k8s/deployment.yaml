@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: wallet-service
-          image: ${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}
+          image: public.ecr.aws/z1z0w2y6/wallet-service:1.0
           ports:
             - containerPort: 8080
           envFrom:
@@ -51,8 +51,8 @@ spec:
               memory: "512Mi"
               cpu: "250m"
             limits:
-              memory: "1Gi"
-              cpu: "500m"
+              memory: "512Mi"
+              cpu: "200m"
           readinessProbe:
             httpGet:
               path: /actuator/health
