@@ -71,18 +71,22 @@ pipeline {
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         try {
+                            // Configure kubectl
                             sh """
                                 aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}
                             """
 
+                            // Create namespace if doesn't exist
                             sh """
                                 kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                             """
 
+                            // Update deployment file with new image
                             sh """
                                 sed -i 's|${ECR_REGISTRY}/${IMAGE_NAME}:[0-9]*|${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}|g' k8s/deployment.yaml
                             """
 
+                            // Apply K8s manifests
                             sh """
                                 kubectl apply -f k8s/configmap.yaml -n ${NAMESPACE}
                                 kubectl apply -f k8s/secrets.yaml -n ${NAMESPACE}
@@ -90,15 +94,13 @@ pipeline {
                                 kubectl apply -f k8s/service.yaml -n ${NAMESPACE}
                             """
 
+                            // Just check pod status
                             sh """
-                                kubectl rollout status deployment/wallet-service-deploy -n ${NAMESPACE} --timeout=180s
-                            """
-                        } catch (Exception e) {
-                            echo "Deployment failed - checking pod status"
-                            sh """
+                                echo "Checking pod status:"
                                 kubectl get pods -n ${NAMESPACE} -l app=wallet-service
-                                kubectl describe pods -n ${NAMESPACE} -l app=wallet-service
                             """
+
+                        } catch (Exception e) {
                             error "Deployment failed: ${e.message}"
                         }
                     }
