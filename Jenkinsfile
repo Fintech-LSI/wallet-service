@@ -79,12 +79,10 @@ pipeline {
                                 kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                             """
 
-                            // Update deployment file with new image
                             sh """
                                 sed -i 's|${ECR_REGISTRY}/${IMAGE_NAME}:[0-9]*|${ECR_REGISTRY}/${IMAGE_NAME}:${DOCKER_BUILD_NUMBER}|g' k8s/deployment.yaml
                             """
 
-                            // Apply K8s manifests
                             sh """
                                 kubectl apply -f k8s/configmap.yaml -n ${NAMESPACE}
                                 kubectl apply -f k8s/secrets.yaml -n ${NAMESPACE}
@@ -93,13 +91,14 @@ pipeline {
                             """
 
                             sh """
-                                kubectl rollout status deployment/wallet-service -n ${NAMESPACE} --timeout=180s
-                            """
-
-                            sh """
-                                kubectl get pods -n ${NAMESPACE} -l app=wallet-service
+                                kubectl rollout status deployment/wallet-service-deploy -n ${NAMESPACE} --timeout=180s
                             """
                         } catch (Exception e) {
+                            echo "Deployment failed - checking pod status"
+                            sh """
+                                kubectl get pods -n ${NAMESPACE} -l app=wallet-service
+                                kubectl describe pods -n ${NAMESPACE} -l app=wallet-service
+                            """
                             error "Deployment failed: ${e.message}"
                         }
                     }
