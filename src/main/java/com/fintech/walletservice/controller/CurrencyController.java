@@ -2,7 +2,10 @@ package com.fintech.walletservice.controller;
 
 import com.fintech.walletservice.entity.Currency;
 import com.fintech.walletservice.service.CurrencyService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/currencies")
@@ -21,5 +24,10 @@ public class CurrencyController {
     @GetMapping("/{code}")
     public Currency getCurrency(@PathVariable String code) {
         return currencyService.getCurrency(code);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Currency>> getAllCurrencies() {
+      return ResponseEntity.ok(currencyService.getAllCurrencies());
     }
 }

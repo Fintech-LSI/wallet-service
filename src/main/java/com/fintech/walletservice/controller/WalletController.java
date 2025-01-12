@@ -17,7 +17,7 @@ public class WalletController {
 
     @GetMapping("/test")
     public ResponseEntity<String> test() {
-      return ResponseEntity.ok("wallet is runing");
+      return ResponseEntity.ok("wallet is running");
     }
 
 
