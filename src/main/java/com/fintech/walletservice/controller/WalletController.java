@@ -1,11 +1,16 @@
 package com.fintech.walletservice.controller;
 
 import com.fintech.walletservice.dto.requests.CreateWalletRequest;
+import com.fintech.walletservice.dto.requests.TransactionRequest;
 import com.fintech.walletservice.dto.requests.UpdateBalanceRequest;
 import com.fintech.walletservice.dto.responses.WalletResponse;
+import com.fintech.walletservice.entity.Wallet;
 import com.fintech.walletservice.service.WalletService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/wallets")
 
@@ -20,6 +25,10 @@ public class WalletController {
       return ResponseEntity.ok("wallet is running");
     }
 
+    @GetMapping()
+    public ResponseEntity<List<Wallet>> getWalletAll() {
+      return ResponseEntity.ok( walletService.getAllWallets() );
+    }
 
     @PostMapping
     public ResponseEntity<WalletResponse> createWallet(@RequestBody CreateWalletRequest request) {
@@ -40,5 +49,10 @@ public class WalletController {
             @PathVariable Long id,
             @RequestBody UpdateBalanceRequest request) {
         return ResponseEntity.ok(walletService.updateBalance(id, request));
+    }
+
+    @PostMapping("/deposit")
+  public ResponseEntity<WalletResponse> deposit(@RequestBody TransactionRequest request) {
+     return ResponseEntity.ok( walletService.deposit(request.getWalletId(),request.getAmount(),request.getMoneyMethod()));
     }
 }

@@ -1,6 +1,7 @@
 package com.fintech.walletservice.service;
 
 import com.fintech.walletservice.dto.requests.CreateWalletRequest;
+import com.fintech.walletservice.dto.requests.TransactionRequest;
 import com.fintech.walletservice.dto.requests.UpdateBalanceRequest;
 import com.fintech.walletservice.dto.responses.UserResponse;
 import com.fintech.walletservice.dto.responses.WalletResponse;
@@ -19,19 +20,91 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Service
 public class WalletService {
-    private final WalletRepository walletRepository;
-    private final CurrencyRepository currencyRepository;
-    private final RestTemplate restTemplate;
-    private final String userServiceUrl = "http://localhost:8090/api/users"; // User Service base URL
 
-    public WalletService(WalletRepository walletRepository, CurrencyRepository currencyRepository, RestTemplate restTemplate) {
+    @Value("${var.service.user-service:http://localhost:8080/user-service}")
+    private String userServiceUrl ; // User Service base URL
+
+
+  private final WalletRepository walletRepository;
+  private final CurrencyRepository currencyRepository;
+  private final RestTemplate restTemplate;
+  private final TransactionProducerService transactionProducer;
+
+    public WalletService(
+      WalletRepository walletRepository,
+      CurrencyRepository currencyRepository,
+      RestTemplate restTemplate,
+      TransactionProducerService transactionProducer
+
+    ) {
         this.walletRepository = walletRepository;
         this.currencyRepository = currencyRepository;
         this.restTemplate = restTemplate;
+        this.transactionProducer = transactionProducer;
     }
+
+  public WalletResponse deposit(Long walletId, Double amount, String method) {
+    Wallet sourceWallet = walletRepository.findById(walletId)
+      .orElseThrow(() -> new WalletException("Source wallet not found"));
+
+    TransactionRequest request = TransactionRequest.builder()
+      .transactionType("DEPOSIT")
+      .walletId(walletId)
+      .amount(amount)
+      .moneyMethod(method)
+      .build();
+
+    sourceWallet.setBalance(sourceWallet.getBalance() + amount);
+
+    walletRepository.save(sourceWallet);
+
+
+    transactionProducer.sendTransactionRequest(request);
+
+    return mapToWalletResponse(sourceWallet);
+
+  }
+
+  public WalletResponse transfer(Long fromWalletId, Long toWalletId, Double amount) {
+    // 1. Validate wallets and check balance
+    Wallet sourceWallet = walletRepository.findById(fromWalletId)
+      .orElseThrow(() -> new WalletException("Source wallet not found"));
+    Wallet targetWallet = walletRepository.findById(toWalletId)
+      .orElseThrow(() -> new WalletException("Target wallet not found"));
+
+    if (sourceWallet.getBalance() < amount) {
+      throw new WalletException("Insufficient balance");
+    }
+
+    // 2. Create and send transaction request
+    TransactionRequest request = TransactionRequest.builder()
+      .transactionType("TRANSFER")
+      .walletId(fromWalletId)
+      .targetWalletId(toWalletId)
+      .amount(amount)
+      .build();
+
+    // 3. Update balances
+    sourceWallet.setBalance(sourceWallet.getBalance() - amount);
+    targetWallet.setBalance(targetWallet.getBalance() + amount);
+
+    // 4. Save wallet changes
+    walletRepository.save(sourceWallet);
+    walletRepository.save(targetWallet);
+
+    // 5. Send to transaction service for recording
+    transactionProducer.sendTransactionRequest(request);
+
+    return mapToWalletResponse(sourceWallet);
+  }
+
+
+
+
     public WalletResponse getWalletDetails(Long walletId) {
         Wallet wallet = walletRepository.findById(walletId)
                 .orElseThrow(() -> new WalletException("Wallet not found"));
@@ -111,5 +184,9 @@ public class WalletService {
                 .currencyCode(wallet.getCurrency().getCode())
                 .currencyName(wallet.getCurrency().getName())
                 .build();
+    }
+
+  public List<Wallet> getAllWallets() {
+    return walletRepository.findAll();
     }
 }

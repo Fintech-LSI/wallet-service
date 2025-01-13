@@ -3,5 +3,23 @@ spring:
     import: optional:configserver:http://localhost:8889
   application:
     name: wallet-service
+  kafka:
+#    consumer:
+#      bootstrap-servers: localhost:9092
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+#      properties:
+#        spring.json.trusted.packages: "*"
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 user-service:
   url: http://localhost:8090/api/users
+
+var:
+  service:
+    user-service: http://localhost:8090/api/users
+  TOPIC:
+    wallet-transaction: transaction-requests
