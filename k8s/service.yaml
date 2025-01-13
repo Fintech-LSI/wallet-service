@@ -6,7 +6,7 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 80
-      targetPort: 8080
+    - port: 8099
+      targetPort: 8099
   selector:
     app: wallet-service
