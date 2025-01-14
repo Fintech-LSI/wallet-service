@@ -26,8 +26,8 @@ public class CurrencyController {
         return currencyService.getCurrency(code);
     }
 
-  @GetMapping("/id/{code}")
-  public ResponseEntity<Currency> getCurrencyById(@PathVariable Long id) {
+  @GetMapping("/id/{id}")
+  public ResponseEntity<Currency> getCurrencyById(@PathVariable("id") Long id) {
     return ResponseEntity.ok(currencyService.getCurrencyById(id) );
   }
 
