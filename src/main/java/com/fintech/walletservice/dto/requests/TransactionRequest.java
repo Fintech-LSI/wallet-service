@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionRequest implements Serializable {
-  private String transactionType;
+  private String transactionType; // DEPOSIT , TRANSFER , WITHDRAW
   private Long walletId;
   private Long targetWalletId;
   private Double amount;

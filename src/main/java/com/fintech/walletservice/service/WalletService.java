@@ -21,6 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class WalletService {
@@ -47,18 +49,15 @@ public class WalletService {
         this.transactionProducer = transactionProducer;
     }
 
-  public WalletResponse deposit(Long walletId, Double amount, String method) {
-    Wallet sourceWallet = walletRepository.findById(walletId)
+  public WalletResponse deposit(TransactionRequest request) {
+    Wallet sourceWallet = walletRepository.findById(request.getWalletId())
       .orElseThrow(() -> new WalletException("Source wallet not found"));
 
-    TransactionRequest request = TransactionRequest.builder()
-      .transactionType("DEPOSIT")
-      .walletId(walletId)
-      .amount(amount)
-      .moneyMethod(method)
-      .build();
+    if (!request.getTransactionType().equals("DEPOSIT")) {
+      throw new WalletException("Invalid transaction type : you should use DEPOSIT");
+    }
 
-    sourceWallet.setBalance(sourceWallet.getBalance() + amount);
+    sourceWallet.setBalance(sourceWallet.getBalance() + request.getAmount());
 
     walletRepository.save(sourceWallet);
 
@@ -69,28 +68,24 @@ public class WalletService {
 
   }
 
-  public WalletResponse transfer(Long fromWalletId, Long toWalletId, Double amount) {
+  public WalletResponse transfer(TransactionRequest request) {
     // 1. Validate wallets and check balance
-    Wallet sourceWallet = walletRepository.findById(fromWalletId)
+    Wallet sourceWallet = walletRepository.findById(request.getWalletId())
       .orElseThrow(() -> new WalletException("Source wallet not found"));
-    Wallet targetWallet = walletRepository.findById(toWalletId)
+    Wallet targetWallet = walletRepository.findById(request.getTargetWalletId())
       .orElseThrow(() -> new WalletException("Target wallet not found"));
 
-    if (sourceWallet.getBalance() < amount) {
+    if (sourceWallet.getBalance() < request.getAmount()) {
       throw new WalletException("Insufficient balance");
     }
 
-    // 2. Create and send transaction request
-    TransactionRequest request = TransactionRequest.builder()
-      .transactionType("TRANSFER")
-      .walletId(fromWalletId)
-      .targetWalletId(toWalletId)
-      .amount(amount)
-      .build();
+    if (!request.getTransactionType().equals("TRANSFER")) {
+      throw new WalletException("Invalid transaction type : you should use TRANSFER");
+    }
 
     // 3. Update balances
-    sourceWallet.setBalance(sourceWallet.getBalance() - amount);
-    targetWallet.setBalance(targetWallet.getBalance() + amount);
+    sourceWallet.setBalance(sourceWallet.getBalance() - request.getAmount());
+    targetWallet.setBalance(targetWallet.getBalance() + request.getAmount());
 
     // 4. Save wallet changes
     walletRepository.save(sourceWallet);
@@ -103,9 +98,35 @@ public class WalletService {
   }
 
 
+  public WalletResponse withdraw(TransactionRequest request) {
+    // 1. Validate wallets and check balance
+    Wallet sourceWallet = walletRepository.findById(request.getWalletId())
+      .orElseThrow(() -> new WalletException("Source wallet not found"));
 
 
-    public WalletResponse getWalletDetails(Long walletId) {
+    if (!request.getTransactionType().equals("WITHDRAW")) {
+      throw new WalletException("Invalid transaction type : you should use WITHDRAW");
+    }
+
+    // 3. Update balances
+    sourceWallet.setBalance(sourceWallet.getBalance() - request.getAmount());
+
+
+    // 4. Save wallet changes
+    walletRepository.save(sourceWallet);
+
+    // 5. Send to transaction service for recording
+    transactionProducer.sendTransactionRequest(request);
+
+    return mapToWalletResponse(sourceWallet);
+  }
+
+  public List<WalletResponse> getWalletsByUserId(Long userId) {
+      List<Wallet> wallets = walletRepository.findWalletsByUserId(userId);
+      return wallets.stream().map(this::mapToWalletResponse).collect(Collectors.toList());
+  }
+
+  public WalletResponse getWalletDetails(Long walletId) {
         Wallet wallet = walletRepository.findById(walletId)
                 .orElseThrow(() -> new WalletException("Wallet not found"));
 
@@ -122,61 +143,63 @@ public class WalletService {
                 .build();
     }
 
-    private String fetchUserName(Long userId) {
-        try {
-            ResponseEntity<UserResponse> response = restTemplate.getForEntity(userServiceUrl + "/" + userId, UserResponse.class);
-            return response.getBody().getFirstName() + " " + response.getBody().getLastName();
-        } catch (Exception e) {
-            throw new WalletException("Failed to fetch user details: " + e.getMessage());
-        }
-    }
-    public WalletResponse createWallet(CreateWalletRequest request) {
-        Currency currency = currencyRepository.findByCode(request.currencyCode())
-                .orElseThrow(() -> new CurrencyException("Currency not found"));
+  private String fetchUserName(Long userId) {
+      try {
+          ResponseEntity<UserResponse> response = restTemplate.getForEntity(userServiceUrl + "/" + userId, UserResponse.class);
+          return response.getBody().getFirstName() + " " + response.getBody().getLastName();
+      } catch (Exception e) {
+          throw new WalletException("Failed to fetch user details: " + e.getMessage());
+      }
+  }
 
-        Wallet wallet = new Wallet();
-        wallet.setUserId(request.userId());
-        wallet.setCurrency(currency);
-        wallet.setBalance(request.initialBalance());
+  public WalletResponse createWallet(CreateWalletRequest request) {
+      Currency currency = currencyRepository.findByCode(request.currencyCode())
+              .orElseThrow(() -> new CurrencyException("Currency not found"));
 
-        wallet = walletRepository.save(wallet);
-        return mapToWalletResponse(wallet);
-    }
-    public String createFileWithUserName(Long walletId) {
-        Wallet wallet = walletRepository.findById(walletId)
-                .orElseThrow(() -> new WalletException("Wallet not found"));
+      Wallet wallet = new Wallet();
+      wallet.setUserId(request.userId());
+      wallet.setCurrency(currency);
+      wallet.setBalance(request.initialBalance());
 
-        String userName = restTemplate.getForObject(userServiceUrl + "/api/users/" + wallet.getUserId() + "/name", String.class);
+      wallet = walletRepository.save(wallet);
+      return mapToWalletResponse(wallet);
+  }
 
-        String fileName = "wallet_" + walletId + "_" + userName.replace(" ", "_") + ".txt";
-        Path filePath = Paths.get("files/" + fileName);
+  public String createFileWithUserName(Long walletId) {
+      Wallet wallet = walletRepository.findById(walletId)
+              .orElseThrow(() -> new WalletException("Wallet not found"));
 
-        try {
-            Files.writeString(filePath, "Wallet Info:\n" +
-                    "User: " + userName + "\n" +
-                    "Balance: " + wallet.getBalance() + "\n" +
-                    "Currency: " + wallet.getCurrency().getName());
-        } catch (IOException e) {
-            throw new RuntimeException("Error creating file", e);
-        }
+      String userName = restTemplate.getForObject(userServiceUrl + "/api/users/" + wallet.getUserId() + "/name", String.class);
 
-        return fileName;
-    }
+      String fileName = "wallet_" + walletId + "_" + userName.replace(" ", "_") + ".txt";
+      Path filePath = Paths.get("files/" + fileName);
 
-    public WalletResponse updateBalance(Long walletId, UpdateBalanceRequest request) {
-        Wallet wallet = walletRepository.findById(walletId)
-                .orElseThrow(() -> new WalletException("Wallet not found"));
+      try {
+          Files.writeString(filePath, "Wallet Info:\n" +
+                  "User: " + userName + "\n" +
+                  "Balance: " + wallet.getBalance() + "\n" +
+                  "Currency: " + wallet.getCurrency().getName());
+      } catch (IOException e) {
+          throw new RuntimeException("Error creating file", e);
+      }
 
-        if (request.amount() + wallet.getBalance() < 0) {
-            throw new WalletException("Insufficient balance");
-        }
+      return fileName;
+  }
 
-        wallet.setBalance(wallet.getBalance() + request.amount());
-        wallet = walletRepository.save(wallet);
-        return mapToWalletResponse(wallet);
-    }
+  public WalletResponse updateBalance(Long walletId, UpdateBalanceRequest request) {
+      Wallet wallet = walletRepository.findById(walletId)
+              .orElseThrow(() -> new WalletException("Wallet not found"));
 
-    private WalletResponse mapToWalletResponse(Wallet wallet) {
+      if (request.amount() + wallet.getBalance() < 0) {
+          throw new WalletException("Insufficient balance");
+      }
+
+      wallet.setBalance(wallet.getBalance() + request.amount());
+      wallet = walletRepository.save(wallet);
+      return mapToWalletResponse(wallet);
+  }
+
+  private WalletResponse mapToWalletResponse(Wallet wallet) {
         return WalletResponse.builder()
                 .id(wallet.getId())
                 .userId(wallet.getUserId())
@@ -188,5 +211,6 @@ public class WalletService {
 
   public List<Wallet> getAllWallets() {
     return walletRepository.findAll();
-    }
+  }
+
 }
