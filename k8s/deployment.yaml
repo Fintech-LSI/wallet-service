@@ -23,8 +23,12 @@ spec:
                 name: wallet-service-config
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "prod"
-            # PostgreSQL Credentials
+              value: "native"
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:

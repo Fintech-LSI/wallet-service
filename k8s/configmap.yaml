@@ -4,32 +4,26 @@ metadata:
   name: wallet-service-config
   namespace: fintech
 data:
-  application.yml: |-
+  application.yml: |
     spring:
       application:
         name: wallet-service
-
       config:
-        import: optional:configserver:http://config-server.fintech.svc.cluster.local:8889
-
+        import: optional:configserver:http://10.0.0.237:8889
       datasource:
         driver-class-name: org.postgresql.Driver
-        url: jdbc:postgresql://postgres-instance.c122egeymo28.us-east-1.rds.amazonaws.com:5432/wallet_service_db
-        username: postgres
-        password: password
-
       jpa:
         hibernate:
           ddl-auto: create
         database-platform: org.hibernate.dialect.PostgreSQLDialect
 
     user-service:
-      url: http://user-service.fintech.svc.cluster.local:8080/api/users
+      url: http://10.0.0.202:8090/api/users
 
     eureka:
       client:
         serviceUrl:
-          defaultZone: http://discovery-service.fintech.svc.cluster.local:8761/eureka/
+          defaultZone: http://10.0.1.176:8761/eureka/
         register-with-eureka: true
         fetch-registry: true
       instance:
