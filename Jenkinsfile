@@ -10,7 +10,6 @@ pipeline {
         NAMESPACE = 'fintech'
         SONAR_PROJECT_KEY = 'wallet-service'
         SONAR_HOST_URL = 'http://54.86.47.1:9000'
-        SONAR_PROJECT_KEY = 'wallet-service'
     }
 
     stages {
