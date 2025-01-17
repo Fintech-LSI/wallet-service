@@ -23,3 +23,10 @@ var:
     user-service: http://user-service:8090/api/users
   TOPIC:
     wallet-transaction: transaction-requests
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
