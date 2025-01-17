@@ -1,6 +1,6 @@
 spring:
   config:
-    import: optional:configserver:http://10.0.0.237:8889
+    import: optional:configserver:http://config-service:8889
   application:
     name: wallet-service
   kafka:
@@ -11,15 +11,15 @@ spring:
 #      properties:
 #        spring.json.trusted.packages: "*"
     producer:
-      bootstrap-servers: localhost:9092
+      bootstrap-servers: kafka:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 user-service:
-  url: http://10.0.0.202:8090/api/users
+  url: http://user-service:8090/api/users
 
 var:
   service:
-    user-service: http://10.0.0.202:8090/api/users
+    user-service: http://user-service:8090/api/users
   TOPIC:
     wallet-transaction: transaction-requests
