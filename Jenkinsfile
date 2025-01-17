@@ -9,6 +9,8 @@ pipeline {
         EKS_CLUSTER_NAME = 'main-cluster'
         NAMESPACE = 'fintech'
         SONAR_PROJECT_KEY = 'wallet-service'
+        SONAR_HOST_URL = 'http://54.86.47.1:9000'
+        SONAR_PROJECT_KEY = 'wallet-service'
     }
 
     stages {
@@ -19,35 +21,33 @@ pipeline {
         }
 
         /*stage('SonarQube Analysis') {
-                    steps {
-                        script {
-                            withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_TOKEN')]) {
-                                try {
-                                    sh """
-                                        mvn clean verify sonar:sonar \
-                                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                            -Dsonar.projectName='Wallet Service' \
-                                            -Dsonar.host.url=http://98.81.233.237:9000 \
-                                            -Dsonar.token=${SONAR_TOKEN} \
-                                            -Dsonar.sources=src/main \
-                                            -Dsonar.tests=src/test \
-                                            -Dsonar.java.binaries=target/classes \
-                                            -Dsonar.java.test.binaries=target/test-classes \
-                                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                                            -Dsonar.java.coveragePlugin=jacoco
-                                    """
-                                } catch (Exception e) {
-                                    error "SonarQube analysis failed: ${e.message}"
-                                }
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('SonarQube') {  // Add this wrapper
+                            try {
+                                sh """
+                                    mvn clean verify sonar:sonar \
+                                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                        -Dsonar.login=${SONAR_TOKEN}
+                                """
+                                echo "SonarQube analysis completed successfully."
+                            } catch (Exception e) {
+                                error "SonarQube analysis failed: ${e.message}"
                             }
                         }
                     }
+                }
+            }
         }
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                script {
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true
+                    }
                 }
             }
         }*/

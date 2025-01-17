@@ -9,7 +9,7 @@ data:
       application:
         name: wallet-service
       config:
-        import: optional:configserver:http://10.0.0.237:8889
+        import: optional:configserver:http://config-service:8889
       datasource:
         driver-class-name: org.postgresql.Driver
       jpa:
@@ -18,16 +18,7 @@ data:
         database-platform: org.hibernate.dialect.PostgreSQLDialect
 
     user-service:
-      url: http://10.0.0.202:8090/api/users
-
-    eureka:
-      client:
-        serviceUrl:
-          defaultZone: http://10.0.1.176:8761/eureka/
-        register-with-eureka: true
-        fetch-registry: true
-      instance:
-        prefer-ip-address: true
+      url: http://user-service:8090/api/users
 
     management:
       endpoints:
