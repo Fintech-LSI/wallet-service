@@ -23,7 +23,7 @@ spec:
                 name: wallet-service-config
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "native"
+              value: "default"
             - name: SPRING_DATASOURCE_URL
               valueFrom:
                 secretKeyRef:
