@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 @Service
 public class WalletService {
 
-    @Value("${var.service.user-service:http://localhost:8080/user-service}")
-    private String userServiceUrl ; // User Service base URL
+  @Value("${var.service.user-service:http://localhost:8080/user-service}")
+  private String userServiceUrl ; // User Service base URL
 
 
   private final WalletRepository walletRepository;
@@ -36,18 +36,24 @@ public class WalletService {
   private final RestTemplate restTemplate;
   private final TransactionProducerService transactionProducer;
 
-    public WalletService(
-      WalletRepository walletRepository,
-      CurrencyRepository currencyRepository,
-      RestTemplate restTemplate,
-      TransactionProducerService transactionProducer
+  public WalletService(
+    WalletRepository walletRepository,
+    CurrencyRepository currencyRepository,
+    RestTemplate restTemplate,
+    TransactionProducerService transactionProducer
 
-    ) {
+  ){
         this.walletRepository = walletRepository;
         this.currencyRepository = currencyRepository;
         this.restTemplate = restTemplate;
         this.transactionProducer = transactionProducer;
-    }
+  }
+
+  public WalletResponse deleteWalletResponse(Long id){
+    Wallet wallet = walletRepository.findById(id).orElseThrow(()-> new WalletException("not found"));
+    walletRepository.delete(wallet);
+    return mapToWalletResponse(wallet);
+  }
 
   public WalletResponse deposit(TransactionRequest request) {
     Wallet sourceWallet = walletRepository.findById(request.getWalletId())

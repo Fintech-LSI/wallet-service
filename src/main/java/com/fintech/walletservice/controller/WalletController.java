@@ -27,6 +27,11 @@ public class WalletController {
     return ResponseEntity.ok("wallet is running");
   }
 
+  @DeleteMapping("/{walletId}")
+  public ResponseEntity<WalletResponse> deleteWallet(@PathVariable("walletId") Long walletId) {
+    return ResponseEntity.ok( walletService.deleteWalletResponse(walletId) );
+  }
+
   @GetMapping("/user/{userId}")
   public ResponseEntity<List<WalletResponse>> getWalletsByUser(@PathVariable("userId") Long userId) {
     return ResponseEntity.ok(walletService.getWalletsByUserId(userId));
