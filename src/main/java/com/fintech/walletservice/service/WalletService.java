@@ -83,9 +83,15 @@ public class WalletService {
       throw new WalletException("Invalid transaction type : you should use TRANSFER");
     }
 
+    double targetAmount = request.getAmount();
+    if (targetWallet.getCurrency().getId() != sourceWallet.getCurrency().getId()) {
+      double MoneyInDollar = request.getAmount() * sourceWallet.getCurrency().getExchangeRate();
+      targetAmount = MoneyInDollar / targetWallet.getCurrency().getExchangeRate();
+    }
+
     // 3. Update balances
     sourceWallet.setBalance(sourceWallet.getBalance() - request.getAmount());
-    targetWallet.setBalance(targetWallet.getBalance() + request.getAmount());
+    targetWallet.setBalance(targetWallet.getBalance() + targetAmount );
 
     // 4. Save wallet changes
     walletRepository.save(sourceWallet);
@@ -106,6 +112,9 @@ public class WalletService {
 
     if (!request.getTransactionType().equals("WITHDRAW")) {
       throw new WalletException("Invalid transaction type : you should use WITHDRAW");
+    }
+    if (sourceWallet.getBalance() < request.getAmount()) {
+      throw new WalletException("Insufficient balance");
     }
 
     // 3. Update balances
