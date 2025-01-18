@@ -16,6 +16,11 @@ data:
         hibernate:
           ddl-auto: update
         database-platform: org.hibernate.dialect.PostgreSQLDialect
+      kafka:
+        producer:
+          bootstrap-servers: 10.0.0.26:9092
+          key-serializer: org.apache.kafka.common.serialization.StringSerializer
+          value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
     user-service:
       url: http://user-service:8090/api/users
