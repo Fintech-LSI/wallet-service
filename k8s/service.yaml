@@ -4,7 +4,7 @@ metadata:
   name: wallet-service
   namespace: fintech
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - port: 8099
       targetPort: 8099
