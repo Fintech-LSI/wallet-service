@@ -1,19 +1,17 @@
 spring:
-  profiles:
-    active: local
   config:
-    import: optional:configserver:http://config-service:8889
+    import: optional:configserver:http://localhost:8889
   application:
     name: wallet-service
   kafka:
-#    consumer:
-#      bootstrap-servers: localhost:9092
-#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-#      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-#      properties:
-#        spring.json.trusted.packages: "*"
+    #    consumer:
+    #      bootstrap-servers: localhost:9092
+    #      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    #      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    #      properties:
+    #        spring.json.trusted.packages: "*"
     producer:
-      bootstrap-servers: 10.0.0.26:9092
+      bootstrap-servers: kafka:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 

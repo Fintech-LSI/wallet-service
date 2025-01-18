@@ -4,54 +4,22 @@ metadata:
   name: wallet-service-config
   namespace: fintech
 data:
-  application.yml: |-
+  application.yml: |
     spring:
       application:
         name: wallet-service
-      
+      config:
+        import: optional:configserver:http://config-service:8889
       datasource:
-        # Primary MySQL Database
-        primary:
-          url: jdbc:mysql://terraform-20250111154620029800000001.c122egeymo28.us-east-1.rds.amazonaws.com:3306/wallet_service_db
-          driver-class-name: com.mysql.cj.jdbc.Driver
-          hikari:
-            maximum-pool-size: 10
-            minimum-idle: 5
-            pool-name: MySQLPool
-        
-        # Secondary PostgreSQL Database
-        secondary:
-          url: jdbc:postgresql://postgres-instance.c122egeymo28.us-east-1.rds.amazonaws.com:5432/wallet_service_db
-          driver-class-name: org.postgresql.Driver
-          hikari:
-            maximum-pool-size: 10
-            minimum-idle: 5
-            pool-name: PostgresPool
-      
+        driver-class-name: org.postgresql.Driver
       jpa:
-        properties:
-          hibernate:
-            dialect:
-              primary: org.hibernate.dialect.MySQLDialect
-              secondary: org.hibernate.dialect.PostgreSQLDialect
         hibernate:
-          ddl-auto: validate
-    
-    config:
-      import: optional:configserver:http://config-server.fintech.svc.cluster.local:8889
-    
+          ddl-auto: update
+        database-platform: org.hibernate.dialect.PostgreSQLDialect
+
     user-service:
-      url: http://user-service.fintech.svc.cluster.local:8080/api/users
-    
-    eureka:
-      client:
-        serviceUrl:
-          defaultZone: http://discovery-service.fintech.svc.cluster.local:8761/eureka/
-        register-with-eureka: true
-        fetch-registry: true
-      instance:
-        prefer-ip-address: true
-    
+      url: http://user-service:8090/api/users
+
     management:
       endpoints:
         web:

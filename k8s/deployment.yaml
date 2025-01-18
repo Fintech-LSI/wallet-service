@@ -4,7 +4,7 @@ metadata:
   name: wallet-service-deploy
   namespace: fintech
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: wallet-service
@@ -17,45 +17,38 @@ spec:
         - name: wallet-service
           image: public.ecr.aws/z1z0w2y6/wallet-service:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 8099
           envFrom:
             - configMapRef:
                 name: wallet-service-config
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "prod"
-            # MySQL Credentials
-            - name: SPRING_DATASOURCE_PRIMARY_USERNAME
+              value: "default"
+            - name: SPRING_DATASOURCE_URL
               valueFrom:
                 secretKeyRef:
-                  name: mysql-credentials
-                  key: username
-            - name: SPRING_DATASOURCE_PRIMARY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-credentials
-                  key: password
-            # PostgreSQL Credentials
-            - name: SPRING_DATASOURCE_SECONDARY_USERNAME
+                  name: postgres-credentials
+                  key: url
+            - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: postgres-credentials
                   key: username
-            - name: SPRING_DATASOURCE_SECONDARY_PASSWORD
+            - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: postgres-credentials
                   key: password
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "150m"
-            limits:
               memory: "512Mi"
-              cpu: "300m"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8099
             initialDelaySeconds: 30
             periodSeconds: 10
