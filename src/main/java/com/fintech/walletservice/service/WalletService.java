@@ -109,6 +109,10 @@ public class WalletService {
     return mapToWalletResponse(sourceWallet);
   }
 
+  public Long getUserOfWallet(Long walletId){
+    Wallet wallet = walletRepository.findById(walletId).orElseThrow(()-> new WalletException("not found"));
+    return wallet.getUserId();
+  }
 
   public WalletResponse withdraw(TransactionRequest request) {
     // 1. Validate wallets and check balance

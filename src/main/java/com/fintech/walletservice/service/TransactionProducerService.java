@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-
 public class TransactionProducerService {
   private final KafkaTemplate<String, TransactionRequest> kafkaTemplate;
   @Value("${var.TOPIC.wallet-transaction:transaction-requests}")

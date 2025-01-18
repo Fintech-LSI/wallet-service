@@ -13,7 +13,7 @@ spring:
 #      properties:
 #        spring.json.trusted.packages: "*"
     producer:
-      bootstrap-servers: kafka:9092
+      bootstrap-servers: 10.0.0.26:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 

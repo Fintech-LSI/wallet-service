@@ -79,4 +79,10 @@ public class WalletController {
   public ResponseEntity<WalletResponse> withdraw(@RequestBody TransactionRequest request) {
     return ResponseEntity.ok( walletService.withdraw(request));
   }
+
+  @GetMapping("/{walletId}/user")
+  public ResponseEntity<Long> getUserOfWallet(@PathVariable Long walletId) {
+    return ResponseEntity.ok(walletService.getUserOfWallet(walletId));
+  }
+
 }
