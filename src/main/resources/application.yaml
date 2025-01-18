@@ -5,3 +5,6 @@ spring:
     name: wallet-service
 user-service:
   url: http://localhost:8090/api/users
+eureka:
+  instance:
+    prefer-ip-address: true
