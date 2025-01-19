@@ -1,6 +1,5 @@
 spring:
-  profiles:
-    active: local
+
   config:
     import: optional:configserver:http://config-service:8889
   application:
