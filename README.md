@@ -114,8 +114,6 @@ The service includes monitoring integration for:
 
 ## Contributors
 
-## Contributors
-
 | Name | Role | GitHub |
 |------|------|--------|
 | Zakariae Azarkan | DevOps Engineer | [@zachary013](https://github.com/zachary013) |
