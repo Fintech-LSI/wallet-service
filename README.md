@@ -114,11 +114,15 @@ The service includes monitoring integration for:
 
 ## Contributors
 
-- Zakariae Azarkan (@zachary013) - DevOps
-- El Mahdi Id Lahcen (@goalaphx) - Frontend
-- Hodaifa (@hodaifa-ech) - Cloud
-- Khalil El Houssine (@khalilh2002) - Backend
-- Mohamed Amine BAHASSOU (@Medamine-Bahassou) - ML
+## Contributors
+
+| Name | Role | GitHub |
+|------|------|--------|
+| Zakariae Azarkan | DevOps Engineer | [@zachary013](https://github.com/zachary013) |
+| El Mahdi Id Lahcen | Frontend Developer | [@goalaphx](https://github.com/goalaphx) |
+| Hodaifa | Cloud Architect | [@hodaifa-ech](https://github.com/hodaifa-ech) |
+| Khalil El Houssine | Backend Developer | [@khalilh2002](https://github.com/khalilh2002) |
+| Mohamed Amine BAHASSOU | ML Engineer | [@Medamine-Bahassou](https://github.com/Medamine-Bahassou) |
 
 ## License
 
