@@ -1,127 +1,84 @@
-# Wallet Service
+# 💰 Wallet Service
 
-![CI/CD Pipeline](/images/pipeline-diagram.png)
+A Spring Boot microservice for digital wallet and currency management in a fintech ecosystem. 🚀
 
-A Spring Boot microservice for managing digital wallets and currency transactions in a fintech ecosystem.
+## 🔍 Project Overview
 
-## Project Overview
+The **Wallet Service** handles:
+- 💳 Digital wallet management
+- 💱 Multi-currency operations
+- 🔄 Transaction processing
+- 🌐 Currency exchange support
 
-The Wallet Service is a microservice built with Spring Boot that handles:
-- Digital wallet management
-- Currency operations
-- Transaction processing
-- Multi-currency support
-
-## Project Structure
+## 📂 Project Structure
 
 ```
 src/main/java/com.fintech.walletservice/
 ├── config/          # Configuration files
 ├── controller/      # REST controllers
-│   ├── CurrencyController
-│   └── WalletController
-├── dto/            # Data Transfer Objects
-│   ├── requests/   # Request DTOs
-│   └── responses/  # Response DTOs
-├── entity/         # Domain entities
-│   ├── Currency
-│   └── Wallet
-├── repository/     # Data repositories
-│   ├── CurrencyRepository
-│   └── WalletRepository
-└── service/        # Business logic
-    ├── CurrencyService
-    ├── TransactionProducerService
-    └── WalletService
+├── dto/             # Data Transfer Objects
+├── entity/          # Domain entities
+├── repository/      # Data repositories
+└── service/         # Business logic
 ```
 
-## Tech Stack
+## 🛠 Tech Stack
 
 - **Framework**: Spring Boot
-- **Build Tool**: Maven
+- **Build**: Maven
 - **Database**: PostgreSQL
-- **Container**: Docker
-- **Container Registry**: AWS ECR
-- **Orchestration**: Kubernetes (EKS)
+- **Containerization**: Docker
+- **Cloud**: AWS EKS
 - **CI/CD**: Jenkins
-- **Code Quality**: SonarQube
 
-## CI/CD Pipeline
+## 🚀 CI/CD Pipeline Stages
 
-Our automated pipeline includes:
+1. 💻 **Code Checkout**
+2. 🔍 **Static Code Analysis**
+3. 🏗 **Maven Build**
+4. 🐳 **Docker Build & Push**
+5. ☸️ **Kubernetes Deployment**
 
-1. **Code Checkout**: Retrieves code from the repository
-2. **Static Code Analysis**: SonarQube scan (currently commented out)
-3. **Build**: Maven package generation
-4. **Docker Build**: Creates container image
-5. **Image Push**: Publishes to AWS ECR
-6. **Deployment**: Automated deployment to EKS
+## 🚢 Deployment Quick Start
 
-## Deployment
+```bash
+# Build project
+mvn clean package
 
-The service is deployed to AWS EKS using Kubernetes manifests located in the `k8s/` directory:
-- `configmap.yaml`: Environment configurations
-- `secrets.yaml`: Sensitive data
-- `deployment.yaml`: Pod specifications
-- `service.yaml`: Service configurations
+# Run locally
+mvn spring-boot:run
 
-## Getting Started
+# Docker build
+docker build -t wallet-service .
 
-1. **Prerequisites**
-    - Java 17+
-    - Maven
-    - Docker
-    - AWS CLI
-    - kubectl
+# Kubernetes deploy
+kubectl apply -f k8s/ -n fintech
+```
 
-2. **Local Development**
-   ```bash
-   # Build the project
-   mvn clean package
+## 🔬 Monitoring
 
-   # Run locally
-   mvn spring-boot:run
-   ```
+- 📊 Application metrics
+- 🚨 Error tracking
+- 💻 Resource utilization
 
-3. **Docker Build**
-   ```bash
-   docker build -t wallet-service .
-   ```
+## 👥 Team
 
-4. **Deploy to Kubernetes**
-   ```bash
-   # Configure kubectl
-   aws eks update-kubeconfig --region region --name cluster-name
+| Avatar                                                                                                  | Name | Role | GitHub |
+|---------------------------------------------------------------------------------------------------------|------|------|--------|
+| <img src="https://github.com/zachary013.png" width="50" height="50" style="border-radius: 50%"/>        | Zakariae Azarkan | DevOps Engineer | [@zachary013](https://github.com/zachary013) |
+| <img src="https://github.com/goalaphx.png" width="50" height="50" style="border-radius: 50%"/>          | El Mahdi Id Lahcen | Frontend Developer | [@goalaphx](https://github.com/goalaphx) |
+| <img src="https://github.com/hodaifa-ech.png" width="50" height="50" style="border-radius: 50%"/>       | Hodaifa | Cloud Architect | [@hodaifa-ech](https://github.com/hodaifa-ech) |
+| <img src="https://github.com/khalilh2002.png" width="50" height="50" style="border-radius: 50%"/>       | Khalil El Houssine | Backend Developer | [@khalilh2002](https://github.com/khalilh2002) |
+| <img src="https://github.com/Medamine-Bahassou.png" width="50" height="50" style="border-radius: 50%"/> | Mohamed Amine BAHASSOU | ML Engineer | [@Medamine-Bahassou](https://github.com/Medamine-Bahassou) |
 
-   # Apply manifests
-   kubectl apply -f k8s/
-   ```
+## 🤝 Contributing
 
-## Monitoring
+1. Fork repository
+2. Create feature branch
+3. Commit changes
+4. Push branch
+5. Open Pull Request
 
-The service includes monitoring integration for:
-- Application metrics
-- Performance monitoring
-- Error tracking
-- Resource utilization
+## 📄 License
 
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Run tests
-4. Submit a pull request
-
-## Contributors
-
-| Name | Role | GitHub |
-|------|------|--------|
-| Zakariae Azarkan | DevOps Engineer | [@zachary013](https://github.com/zachary013) |
-| El Mahdi Id Lahcen | Frontend Developer | [@goalaphx](https://github.com/goalaphx) |
-| Hodaifa | Cloud Architect | [@hodaifa-ech](https://github.com/hodaifa-ech) |
-| Khalil El Houssine | Backend Developer | [@khalilh2002](https://github.com/khalilh2002) |
-| Mohamed Amine BAHASSOU | ML Engineer | [@Medamine-Bahassou](https://github.com/Medamine-Bahassou) |
-
-## License
-
-[Add your license information here]
+MIT License
