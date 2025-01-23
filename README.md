@@ -33,6 +33,8 @@ src/main/java/com.fintech.walletservice/
 
 ## 🚀 CI/CD Pipeline Stages
 
+![CI/CD Pipeline](images/pipeline-diagram.png)
+
 1. 💻 **Code Checkout**
 2. 🔍 **Static Code Analysis**
 3. 🏗 **Maven Build**
